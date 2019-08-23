@@ -24,6 +24,7 @@ import plistlib
 import socket
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import json
+import re
 import libarchive
 import libarchive.extract
 import libarchive.read
@@ -33,6 +34,7 @@ import time
 from .util import AirDropUtil
 
 logger = logging.getLogger(__name__)
+devices = []
 
 
 class AirDropServer:
@@ -112,6 +114,9 @@ class AirDropServer:
 class HTTPServerV6(HTTPServer):
     address_family = socket.AF_INET6
 
+def get_devices():
+    return devices
+
 
 class AirDropServerHandler(BaseHTTPRequestHandler):
     """
@@ -145,11 +150,23 @@ class AirDropServerHandler(BaseHTTPRequestHandler):
         self._set_response(len(body))
         self.wfile.write(body)
 
+    def print_info(self, post_data):
+        print ('[*] Found one..')
+        z = plistlib.loads(post_data, fmt=plistlib.FMT_BINARY)['SenderRecordData']
+        result = re.search('<key>ValidatedPhoneHashes</key>(.*)</array>', str(z))
+        rez = result.group(1)
+        if rez:
+            rez = rez.replace('<array>', '').replace('<string>', '').replace('</string>', '').replace('\\n', '').replace('\\t', '')
+            # print(rez)
+            devices.append({'ip': self.client_address[0], 'hash': rez, 'phone': ''})
+            logger.debug('IPv6:{}\nPhone hash: {}'.format(self.client_address[0], rez))
+
     def handle_discover(self):
         content_length = int(self.headers['Content-Length'])
         post_data = self.rfile.read(content_length)
 
         AirDropUtil.write_debug(self.config, post_data, 'receive_discover_request.plist')
+        self.print_info(post_data)
 
         # sample media capabilities as recorded from macOS 10.13.3
         media_capabilities = {

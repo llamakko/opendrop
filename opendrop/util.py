@@ -64,9 +64,9 @@ class AirDropUtil:
     @staticmethod
     def get_uti_type(flp) -> str:
         """
-        Get the Apple conform UTI Type from a flp instance which has been used on the data which should be sent 
+        Get the Apple conform UTI Type from a flp instance which has been used on the data which should be sent
 
-        :param flp: fleep object 
+        :param flp: fleep object
         """
 
         # Default UTI Type
@@ -154,7 +154,7 @@ class AirDropUtil:
     @staticmethod
     def pem2der(s):
         """
-        Create DER Formatted bytes from a PEM Base64 String 
+        Create DER Formatted bytes from a PEM Base64 String
 
         :param s: PEM formatted string
         """
@@ -166,10 +166,10 @@ class AirDropUtil:
     @staticmethod
     def generate_file_icon(file_path):
         """
-        Generates a small and a big thumbnail of an image 
+        Generates a small and a big thumbnail of an image
         This will make it possible to preview the sent file
 
-        :param file_path: The path to the image 
+        :param file_path: The path to the image
         """
         im = Image.open(file_path)
 

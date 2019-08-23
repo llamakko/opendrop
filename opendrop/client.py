@@ -117,16 +117,20 @@ class AirDropClient:
         return status, response_bytes
 
     def send_discover(self):
-        discover_body = {}
+        # discover_body = {}
+        a = '/root/.opendrop/debug/receive_discover_request.plist'
+        discover_body = plistlib.readPlist(a)
         if self.config.record_data:
             discover_body['SenderRecordData'] = self.config.record_data
 
         discover_plist_binary = plistlib.dumps(discover_body, fmt=plistlib.FMT_BINARY)
+        # print(discover_plist_binary)
         success, response_bytes = self.send_POST('/Discover', discover_plist_binary)
         response = plistlib.loads(response_bytes)
+        # print(response)
 
         # if name is returned, then receiver is discoverable
-        return response.get('ReceiverComputerName')
+        return response
 
     def send_ask(self, file_path, icon=None):
         ask_body = {
@@ -196,7 +200,7 @@ class AirDropClient:
 
     def _get_headers(self):
         """
-        Get the headers for requests sent 
+        Get the headers for requests sent
         """
         headers = {
             'Content-Type': 'application/octet-stream',

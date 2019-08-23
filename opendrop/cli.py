@@ -56,7 +56,8 @@ class AirDropCli:
         if args.debug:
             logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)-8s %(name)s: %(message)s')
         else:
-            logging.basicConfig(level=logging.INFO, format='%(message)s')
+            logging.basicConfig(level=logging.NOTSET, format='%(message)s')
+            logging.disable(sys.maxsize)
 
         # TODO put emails and phone in canonical form (lower case, no '+' sign, etc.)
 
@@ -95,21 +96,24 @@ class AirDropCli:
         logger.info('Looking for receivers. Press enter to stop ...')
         self.browser = AirDropBrowser(self.config)
         self.browser.start(callback_add=self._found_receiver)
-        try:
-            input()
-        except KeyboardInterrupt:
-            pass
-        finally:
-            self.browser.stop()
-            logger.debug('Save discovery results to {}'.format(self.config.discovery_report))
-            with open(self.config.discovery_report, 'w') as f:
-                json.dump(self.discover, f)
+        # try:
+        #     # input()
+        #     while 1:
+        #         a = 1
+        # except KeyboardInterrupt:
+        #     pass
+        # finally:
+        #     self.browser.stop()
+        #     logger.debug('Save discovery results to {}'.format(self.config.discovery_report))
+        #     with open(self.config.discovery_report, 'w') as f:
+        #         json.dump(self.discover, f)
 
     def _found_receiver(self, info):
         thread = threading.Thread(target=self._send_discover, args=(info,))
         thread.start()
 
     def _send_discover(self, info):
+        global devices
         try:
             address = ipaddress.ip_address(info.address).compressed
         except ValueError:
@@ -123,7 +127,14 @@ class AirDropCli:
 
         if flags & AirDropReceiverFlags.SUPPORTS_DISCOVER_MAYBE:
             try:
-                receiver_name = client.send_discover()
+                response = client.send_discover()
+                receiver_name =reponse.get('ReceiverComputerName')
+                ReceiverMediaCapabilities = json.loads(reponse.get('ReceiverMediaCapabilities'))
+                os_info = '{} ({})'.format('.'.join(map(
+                    str,
+                    ReceiverMediaCapabilities.get('Vendor', {}).get('com.apple', {}).get('OSVersion'))),
+                    ReceiverMediaCapabilities.get('Vendor', {}).get('com.apple', {}).get('OSBuildVersion'),
+                )
             except TimeoutError:
                 receiver_name = None
                 pass
@@ -135,15 +146,19 @@ class AirDropCli:
         node_info = {
             'name': receiver_name,
             'address': address,
+            'host': hostname,
             'port': port,
             'id': id,
             'flags': flags,
             'discoverable': discoverable,
+            'os': os_info,
         }
         self.lock.acquire()
         self.discover.append(node_info)
         if discoverable:
             logger.info('Found  index {}  ID {}  name {}'.format(index, id, receiver_name))
+        # print(node_info)
+        devices = self.discover
         self.lock.release()
 
     def receive(self):
@@ -197,3 +212,6 @@ class AirDropCli:
         # (fail)
         logger.error('Receiver does not exist (check -r,--receiver format or try \'opendrop find\' again')
         return None
+
+def get_devices():
+    return devices

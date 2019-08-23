@@ -1186,18 +1186,18 @@ class Listener(QuietLogger):
         elif msg.is_query():
             # Always multicast responses
             if port == _MDNS_PORT:
-                if self.zc.address_family is socket.AF_INET6: 
+                if self.zc.address_family is socket.AF_INET6:
                     self.zc.handle_query(msg, _MDNS_ADDR_IPV6, _MDNS_PORT)
-                else: 
+                else:
                     self.zc.handle_query(msg, _MDNS_ADDR, _MDNS_PORT)
 
             # If it's not a multicast query, reply via unicast
             # and multicast
             elif port == _DNS_PORT:
-                if self.zc.address_family is socket.AF_INET6: 
+                if self.zc.address_family is socket.AF_INET6:
                     self.zc.handle_query(msg, addr, port)
                     self.zc.handle_query(msg, _MDNS_ADDR_IPV6, _MDNS_PORT)
-                else: 
+                else:
                     self.zc.handle_query(msg, addr, port)
                     self.zc.handle_query(msg, _MDNS_ADDR, _MDNS_PORT)
 
@@ -1495,7 +1495,7 @@ class ServiceInfo:
                     self.priority = record.priority
                     # self.address = None
                     update_type = _TYPE_A
-                    if zc.address_family == socket.AF_INET6: 
+                    if zc.address_family == socket.AF_INET6:
                         update_type = _TYPE_AAAA
 
                     self.update_record(
@@ -1528,7 +1528,7 @@ class ServiceInfo:
             cached_server = zc.cache.get_by_details(self.server.lower(), *record_type)
             if cached:
                 self.update_record(zc, now, cached)
-            if cached_server: 
+            if cached_server:
                 self.update_record(zc, now, cached_server)
 
         if None not in (self.server, self.address, self.text):
@@ -1557,7 +1557,7 @@ class ServiceInfo:
                         out_type = _TYPE_A
                         if zc.address_family == socket.AF_INET6: #IPv6
                             out_type = _TYPE_AAAA
-                        
+
                         out.add_question(
                             DNSQuestion(self.server, out_type, _CLASS_IN))
                         out.add_answer_at_time(
@@ -1650,21 +1650,21 @@ def normalize_interface_choice(choice, address_family, interface_name):
         choice = ['0.0.0.0']
     elif choice is InterfaceChoice.All and address_family is socket.AF_INET:
         choice = get_all_addresses(address_family)
-    elif address_family is socket.AF_INET6: #IPv6 
+    elif address_family is socket.AF_INET6: #IPv6
         if choice is InterfaceChoice.Default or choice is InterfaceChoice.All:
-            #Get the ip of the interface 
+            #Get the ip of the interface
             ip6_addr =  netifaces.ifaddresses(interface_name)[address_family][0]['addr']
             ip6_addr = ip6_addr.split("%")[0]
             return [ip6_addr]
-        else: 
+        else:
             return choice
     return choice
 
 
 def new_socket(interface_number=None, interface_name=None):
     """
-    Create a new socket for a given interface_number. 
-    interface_name and interface_number have to be for the same interface 
+    Create a new socket for a given interface_number.
+    interface_name and interface_number have to be for the same interface
 
     """
     #Default is IPv4
@@ -1672,14 +1672,14 @@ def new_socket(interface_number=None, interface_name=None):
 
     intf = None #The interface used to transmit data
 
-    if interface_number is None: 
-        #No ipv6 interface given. Stay in ipv4 
+    if interface_number is None:
+        #No ipv6 interface given. Stay in ipv4
         intf = socket.gethostbyname(socket.gethostname())
-    else: #IPv6 
+    else: #IPv6
         intf = int(interface_number)
         address_family = socket.AF_INET6
 
-    #Create socket 
+    #Create socket
     s = socket.socket(address_family, socket.SOCK_DGRAM)
 
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -1706,12 +1706,12 @@ def new_socket(interface_number=None, interface_name=None):
 
     # OpenBSD needs the ttl and loop values for the IP_MULTICAST_TTL and
     # IP_MULTICAST_LOOP socket options as an unsigned char.
-    if address_family is socket.AF_INET: 
+    if address_family is socket.AF_INET:
         ttl = struct.pack(b'B', 255)
         s.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl)
         loop = struct.pack(b'B', 1)
         s.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, loop)
-    
+
     else: #IPv6
         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_MULTICAST_HOPS, 255)
         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_MULTICAST_LOOP, 1)
@@ -1761,7 +1761,7 @@ class Zeroconf(QuietLogger):
             self.address_family = socket.AF_INET6
 
         self.apple_mdns = apple_mdns
-            
+
         interfaces = normalize_interface_choice(interfaces, self.address_family, ipv6_interface_name)
 
         # print("Interfaces", interfaces)
@@ -1775,7 +1775,7 @@ class Zeroconf(QuietLogger):
                     self._listen_socket.setsockopt(
                         socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP,
                         socket.inet_aton(_MDNS_ADDR) + socket.inet_aton(i))
-                else: #IPv6 
+                else: #IPv6
                     self.ifn = struct.pack("I", self.if_index)
                     group = socket.inet_pton(socket.AF_INET6,_MDNS_ADDR_IPV6) + self.ifn
                     self._listen_socket.setsockopt(
@@ -1802,7 +1802,7 @@ class Zeroconf(QuietLogger):
                 respond_socket = new_socket()
                 respond_socket.setsockopt(
                     socket.IPPROTO_IP, socket.IP_MULTICAST_IF, socket.inet_aton(i))
-            else: #IPv6 
+            else: #IPv6
                 respond_socket = new_socket(self.if_index)
                 respond_socket.setsockopt(
                     socket.IPPROTO_IPV6, socket.IPV6_MULTICAST_IF, self.ifn
@@ -1901,7 +1901,7 @@ class Zeroconf(QuietLogger):
                     out.add_answer_at_time(
                         DNSAddress(info.server, _TYPE_A, _CLASS_IN,
                                    ttl, info.address), 0)
-                else: #IPv6 
+                else: #IPv6
                     out.add_answer_at_time(
                         DNSAddress(info.server, _TYPE_AAAA, _CLASS_IN,
                                    ttl, info.address), 0)
@@ -1973,7 +1973,7 @@ class Zeroconf(QuietLogger):
                         out_type = _TYPE_A
                         if self.address_family == socket.AF_INET6: #IPv6
                             out_type = _TYPE_AAAA
-                            
+
                         out.add_answer_at_time(DNSAddress(
                             info.server, out_type, _CLASS_IN, 0,
                             info.address), 0)
@@ -2100,8 +2100,8 @@ class Zeroconf(QuietLogger):
                         out.add_answer(msg, DNSPointer(
                             service.type, _TYPE_PTR,
                             _CLASS_IN, _DNS_TTL, service.name))
-                    
-                    if self.apple_mdns and not out is None: 
+
+                    if self.apple_mdns and not out is None:
                         for stype in self.servicetypes.keys():
                             out.add_answer(msg, DNSPointer(
                                 "_services._dns-sd._udp.local.", _TYPE_PTR,
@@ -2112,7 +2112,7 @@ class Zeroconf(QuietLogger):
                         out = DNSOutgoing(_FLAGS_QR_RESPONSE | _FLAGS_AA)
 
                     # Answer A record queries for any service addresses we know
-                    # Used in IPv4 
+                    # Used in IPv4
                     if question.type in (_TYPE_A, _TYPE_ANY) and self.address_family == socket.AF_INET:
                         for service in self.services.values():
                             if service.server.lower() == question.name.lower():
@@ -2120,12 +2120,12 @@ class Zeroconf(QuietLogger):
                                     question.name, _TYPE_A,
                                     _CLASS_IN | _CLASS_UNIQUE,
                                     _DNS_TTL, service.address))
-                    
-                    #React on query for AAAA record 
-                    # In IPv6 
+
+                    #React on query for AAAA record
+                    # In IPv6
                     elif question.type in (_TYPE_AAAA, _TYPE_ANY) and self.address_family == socket.AF_INET6: #IPv6
-                        for service in self.services.values(): 
-                            if service.server == question.name.lower(): 
+                        for service in self.services.values():
+                            if service.server == question.name.lower():
                                 out.add_answer(msg, DNSAddress(
                                     question.name, _TYPE_AAAA,
                                     _CLASS_IN | _CLASS_UNIQUE,
@@ -2162,10 +2162,10 @@ class Zeroconf(QuietLogger):
     def send(self, out, addr=None, port=_MDNS_PORT):
         """Sends an outgoing packet."""
 
-        if self.address_family is socket.AF_INET6: 
-            #Wrong address set. Change to ipv6 mdns 
+        if self.address_family is socket.AF_INET6:
+            #Wrong address set. Change to ipv6 mdns
             addr = (addr or _MDNS_ADDR_IPV6, port, 0, 0,)
-        else: 
+        else:
             addr = (addr or _MDNS_ADDR, port,)
 
 
@@ -2207,7 +2207,7 @@ class Zeroconf(QuietLogger):
             else:
                 group = socket.inet_pton(socket.AF_INET6,_MDNS_ADDR_IPV6) + self.ifn
                 self._listen_socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_LEAVE_GROUP,group)
-            
+
             self._listen_socket.close()
             self.engine.join()
 
