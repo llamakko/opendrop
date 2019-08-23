@@ -85,7 +85,7 @@ class AirDropConfig:
         # Bare minimum, we currently do not support anything else
         self.flags = AirDropReceiverFlags.SUPPORTS_MIXED_TYPES | AirDropReceiverFlags.SUPPORTS_DISCOVER_MAYBE
 
-        self.root_ca_file = resource_filename('opendrop', 'certs/apple_root_ca.pem')
+        self.root_ca_file = resource_filename('opendrop2', 'certs/apple_root_ca.pem')
         if not os.path.exists(self.root_ca_file):
             raise FileNotFoundError('Need Apple root CA certificate: {}'.format(self.root_ca_file))
 
