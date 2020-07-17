@@ -1,5 +1,5 @@
-from opendrop.server import AirDropServer
-from opendrop.config import AirDropConfig
+from opendrop2.server import AirDropServer
+from opendrop2.config import AirDropConfig
 
 
 def get_loopback():
