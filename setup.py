@@ -1,4 +1,4 @@
-from opendrop import __version__
+from opendrop2 import __version__
 from codecs import open
 from os.path import abspath, dirname, join
 from setuptools import find_packages, setup
