@@ -17,13 +17,14 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import os
 import logging
-from pkg_resources import resource_filename
+import os
+import random
 import socket
 import ssl
-import random
 import subprocess
+
+from pkg_resources import resource_filename
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,7 @@ class AirDropReceiverFlags:
     Recovered from sharingd`receiverSupportsX methods.
     A valid node needs to either have SUPPORTS_PIPELINING or SUPPORTS_MIXED_TYPES
     according to sharingd`[SDBonjourBrowser removeInvalidNodes:].
+    Default flags on macOS: 0x3fb according to sharingd`[SDRapportBrowser defaultSFNodeFlags]
     """
     SUPPORTS_URL = 0x01
     SUPPORTS_DVZIP = 0x02
@@ -42,13 +44,22 @@ class AirDropReceiverFlags:
     SUPPORTS_UNKNOWN2 = 0x20
     SUPPORTS_IRIS = 0x40
     SUPPORTS_DISCOVER_MAYBE = 0x80  # Probably indicates that server supports /Discover URL
+    SUPPORTS_UNKNOWN3 = 0x100
+    SUPPORTS_ASSET_BUNDLE = 0x200
 
 
 class AirDropConfig:
-
-    def __init__(self, host_name=None, computer_name=None, computer_model=None, server_port=8771,
-                 airdrop_dir='~/.opendrop', service_id=None,
-                 email=None, phone=None, debug=False, interface=None):
+    def __init__(self,
+                 host_name=None,
+                 computer_name=None,
+                 computer_model=None,
+                 server_port=8771,
+                 airdrop_dir='~/.opendrop',
+                 service_id=None,
+                 email=None,
+                 phone=None,
+                 debug=False,
+                 interface=None):
         self.airdrop_dir = os.path.expanduser(airdrop_dir)
 
         self.discovery_report = os.path.join(self.airdrop_dir, 'discover.last.json')
@@ -104,14 +115,18 @@ class AirDropConfig:
         logger.info('Create new self-signed certificate in {}'.format(self.key_dir))
         if not os.path.exists(self.key_dir):
             os.makedirs(self.key_dir)
-        subprocess.run(['openssl', 'req', '-newkey', 'rsa:2048', '-nodes', '-keyout', 'key.pem',
-                        '-x509', '-days', '365', '-out', 'certificate.pem',
-                        '-subj', '/CN={}'.format(self.computer_name)], cwd=self.key_dir,
-                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        subprocess.run([
+            'openssl', 'req', '-newkey', 'rsa:2048', '-nodes', '-keyout', 'key.pem', '-x509', '-days', '365', '-out',
+            'certificate.pem', '-subj', '/CN={}'.format(self.computer_name)
+        ],
+                       cwd=self.key_dir,
+                       stdout=subprocess.PIPE,
+                       stderr=subprocess.PIPE)
 
     def get_ssl_context(self):
-        sslctxt = ssl.SSLContext()
-        sslctxt.load_cert_chain(self.cert_file, keyfile=self.key_file)
-        sslctxt.load_verify_locations(cafile=self.root_ca_file)
-        sslctxt.verify_mode = ssl.CERT_NONE  # we accept self-signed certificates as does Apple
-        return sslctxt
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS)  # lgtm[py/insecure-protocol], TODO see https://github.com/Semmle/ql/issues/2554
+        ctx.options |= ssl.OP_NO_TLSv1  # TLSv1.0 is insecure
+        ctx.load_cert_chain(self.cert_file, keyfile=self.key_file)
+        ctx.load_verify_locations(cafile=self.root_ca_file)
+        ctx.verify_mode = ssl.CERT_NONE  # we accept self-signed certificates as does Apple
+        return ctx
